@@ -34,6 +34,8 @@
 #   --orchestrator <name>  this session's Claude Code peer name, so the child can
 #                          SendMessage back; read it from ListAgents
 #   --cwd <path>           working directory for the pane        (default: $PWD)
+#   --trust                record --cwd as trusted before spawning, instead of refusing
+#                          to spawn into a directory Claude Code would stop and ask about
 #   --env KEY=VALUE        extra env for the pane; repeatable
 #   --wait                 block until the prompt settles (idle|done|blocked)
 #   --timeout <ms>         bound for --wait                      (default 300000)
@@ -97,6 +99,7 @@ task=""
 prompt=""
 orchestrator=""
 cwd="$PWD"
+trust=no
 wait_for_settle=no
 timeout_ms=300000
 dry_run=no
@@ -114,6 +117,7 @@ while [ $# -gt 0 ]; do
     --orchestrator) orchestrator="${2-}"; shift 2 ;;
     --cwd)          cwd="${2-}"; shift 2 ;;
     --env)          envs+=("${2-}"); shift 2 ;;
+    --trust)        trust=yes; shift ;;
     --timeout)      timeout_ms="${2-}"; shift 2 ;;
     --wait)         wait_for_settle=yes; shift ;;
     --dry-run)      dry_run=yes; shift ;;
@@ -237,6 +241,122 @@ for kv in "CC_TEAM_TASK=$task" "CC_TEAM_AGENT=$name" \
           ${envs[@]+"${envs[@]}"}; do
   env_args+=(--env "$kv")
 done
+
+# Trust preflight — run before anything is created, so a refusal costs no pane.
+#
+# Claude Code gates each working directory behind a one-time "Is this a project you created
+# or one you trust?" dialog and records the answer in ~/.claude.json as
+# projects["<cwd>"].hasTrustDialogAccepted. No flag answers it: `claude --help` documents the
+# dialog being skipped only in non-interactive mode (-p, or a non-TTY stdout), which is not
+# what a pane is. So a spawn into an untrusted directory sits on the dialog, never reaches
+# interactive_ready, and `herdr agent start` fails naming a pane rather than a cause.
+#
+# Observed 2026-09-10: spawning with --cwd into a fresh temp directory produced
+#   herdr-spawn: herdr agent start failed for 'newdirprobe' in pane w7:pM
+# with the trust dialog on screen in that pane. Spawns into an already-trusted repo, and into
+# a worktree beneath it that had no entry of its own, both came up clean — trust covers
+# descendants, so the check below does too.
+CLAUDE_CONFIG="${CLAUDE_CONFIG_DIR:-$HOME}/.claude.json"
+
+# Project keys are stored with forward slashes; cygpath -w handed us backslashes.
+path_key() { printf '%s' "$1" | tr '\\' '/' | sed 's:/*$::'; }
+lower_ascii() { printf '%s' "$1" | tr 'A-Z' 'a-z'; }
+
+# The keys whose hasTrustDialogAccepted is true, one per line. Claude Code writes this file
+# pretty-printed at a fixed indent — project keys at four spaces, their fields at six — which
+# is what lets a line-oriented reader stay honest without jq. If that shape ever changes this
+# returns nothing, and the caller warns rather than blocking every spawn on a parser.
+trusted_projects() {
+  [ -r "$CLAUDE_CONFIG" ] || return 0
+  awk '
+    /^  "projects": \{/ { inproj = 1; next }
+    inproj && /^  \}/   { inproj = 0 }
+    inproj && /^    "/ {
+      key = $0
+      sub(/^    "/, "", key)
+      sub(/":.*$/, "", key)
+      next
+    }
+    inproj && key != "" && /^      "hasTrustDialogAccepted": true/ { print key }
+  ' "$CLAUDE_CONFIG"
+}
+
+# trusted | untrusted | case-mismatch | unknown.
+#
+# case-mismatch is called out on its own because the two paths are indistinguishable to
+# someone reading them. Keys are case-sensitive strings, so one folder can appear twice —
+# this machine carried "d:/programing/..." (false) beside "D:/programing/..." (true) — and
+# "untrusted" is a baffling thing to be told about a directory you trusted last week.
+trust_state() {
+  local want lwant key lkey any=no near=no
+  want=$(path_key "$1")
+  lwant=$(lower_ascii "$want")
+  while IFS= read -r key; do
+    key=$(path_key "$key")
+    [ -n "$key" ] || continue
+    any=yes
+    case "$want" in
+      "$key"|"$key"/*) printf 'trusted\n'; return ;;
+    esac
+    lkey=$(lower_ascii "$key")
+    case "$lwant" in
+      "$lkey"|"$lkey"/*) near=yes ;;
+    esac
+  done <<EOF
+$(trusted_projects)
+EOF
+  if   [ "$any" = no ];    then printf 'unknown\n'
+  elif [ "$near" = yes ];  then printf 'case-mismatch\n'
+  else                          printf 'untrusted\n'
+  fi
+}
+
+# Write the entry the dialog would have written. Node is the dependency here rather than jq
+# because Claude Code ships on it, so any machine that can run a spawned agent can run this.
+#
+# A live session rewrites ~/.claude.json wholesale from its own memory, so an entry seeded
+# here can be dropped again by a session that started before it. Spawn straight after
+# seeding; the child records its own entry once it settles.
+grant_trust() {
+  local key="$1"
+  if [ "$dry_run" = yes ]; then
+    printf '+ record %s as trusted in %s\n' "$key" "$CLAUDE_CONFIG" >&2
+    return 0
+  fi
+  command -v node >/dev/null 2>&1 \
+    || die "--trust needs node to edit $CLAUDE_CONFIG; answer the dialog in the pane instead"
+  node -e '
+    const fs = require("fs");
+    const file = process.argv[1], key = process.argv[2];
+    const conf = JSON.parse(fs.readFileSync(file, "utf8"));
+    conf.projects = conf.projects || {};
+    conf.projects[key] = Object.assign({}, conf.projects[key], { hasTrustDialogAccepted: true });
+    const tmp = file + ".herdr-spawn.tmp";
+    fs.writeFileSync(tmp, JSON.stringify(conf, null, 2) + "\n");
+    fs.renameSync(tmp, file);
+  ' "$CLAUDE_CONFIG" "$key" || die "could not record trust for $key in $CLAUDE_CONFIG"
+}
+
+# Checked even under --dry-run: reading the config mutates nothing, and a dry run that
+# stayed silent about a refusal would be the one place you most wanted to hear about it.
+case "$(trust_state "$cwd")" in
+  trusted) ;;
+  unknown)
+    printf '%s: warning: no trusted projects readable in %s; spawning without the check\n' \
+      "$SELF" "$CLAUDE_CONFIG" >&2 ;;
+  case-mismatch)
+    [ "$trust" = yes ] || die "$(printf '%s\n' \
+      "$cwd is trusted under a different spelling of the same path." \
+      "Trust keys in $CLAUDE_CONFIG are case-sensitive strings, so one folder can hold two" \
+      "entries carrying two answers. Reconcile them there, or pass --trust to record this one.")"
+    grant_trust "$(path_key "$cwd")" ;;
+  untrusted)
+    [ "$trust" = yes ] || die "$(printf '%s\n' \
+      "Claude Code has not been trusted with $cwd, so a session started there would stop on" \
+      "its trust dialog and never report ready — the spawn would fail naming a pane, not a cause." \
+      "Spawn somewhere already trusted, or pass --trust if you would answer yes yourself.")"
+    grant_trust "$(path_key "$cwd")" ;;
+esac
 
 tab_id=$(tab_id_for_label "$task")
 

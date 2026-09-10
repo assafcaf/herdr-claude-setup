@@ -57,9 +57,10 @@ Useful options:
 |---|---|
 | `--env KEY=VALUE` | anything else the child needs; repeatable |
 | `--cwd <path>` | a different directory, e.g. a worktree of its own |
+| `--trust` | the `--cwd` has not been trusted yet and you would answer yes — see trust below |
 | `--wait --timeout <ms>` | you want the spawn call to block until the first turn settles |
 | `--dry-run` | print the herdr commands without running them |
-| `-- <claude args...>` | passed to `claude` verbatim — see permissions below |
+| `-- <claude args...>` | passed to `claude` verbatim — see permission mode below |
 
 Every spawned pane receives `CC_TEAM_TASK`, `CC_TEAM_AGENT`, `CC_TEAM_ORCHESTRATOR`,
 `CC_TEAM_ORCHESTRATOR_PANE` and `CC_TEAM_ORCHESTRATOR_SESSION_AT_START`. Tell the child to read
@@ -92,19 +93,50 @@ SendMessage({to: "reviewer", notify_when_idle: true})         // one-shot; never
 `blocked` means Herdr recognised an approval or question dialog. Read the pane and ask the
 operator before answering it — do not send keys at a dialog you have not looked at.
 
-## Permissions, the thing that will bite first
+## Trust, the thing that will bite first
 
-A spawned session starts with default permissions and its own trust state. It will stop at
-the first prompt and sit there as `blocked`, which looks like a hang. Either pass a mode:
+Claude Code gates every working directory behind a one-time *"Is this a project you created
+or one you trust?"* dialog, recorded in `~/.claude.json` as
+`projects["<cwd>"].hasTrustDialogAccepted`. Nothing on the command line answers it — `claude
+--help` documents the dialog being skipped only in non-interactive mode (`-p`, or a non-TTY
+stdout), which a pane is not.
+
+So a spawn into an untrusted directory does not fail like a permission prompt. The session
+sits on the dialog, never reports `interactive_ready`, and the spawner dies with
+
+```
+herdr-spawn: herdr agent start failed for 'x' in pane w7:pM
+```
+
+which names a pane, not a cause. `herdr pane read w7:pM` shows the dialog.
+
+`herdr-spawn.sh` now checks this before it creates a tab or a pane, so a refusal costs
+nothing and says which path it could not find. Trust covers descendants: a worktree beneath
+an already-trusted repo is fine, a `--cwd` outside one is not. Pass `--trust` to record the
+directory and spawn anyway — only for a directory you would have said yes to yourself.
+
+Keys are case-sensitive path strings, so one folder can hold two entries with two different
+answers (`d:/…` untrusted beside `D:/…` trusted) that look identical when you read them. The
+preflight reports that case separately; reconcile the entries rather than trusting twice.
+
+## Permission mode
+
+A spawned session picks up whatever your `settings.json` makes the startup default. Where
+auto mode is a global opt-in there, children come up in auto mode too — verified 2026-09-10,
+both a repo-root and a worktree spawn showing `⏵⏵ auto mode on` with no flag passed.
+
+What does *not* carry over is a mode you cycled by hand with shift+tab, which nothing
+persists, and a project's `.claude/settings.local.json` allow-list, which applies only while
+the cwd is inside that project. Pin the mode explicitly when it matters:
 
 ```bash
 bash ~/.claude/scripts/herdr-spawn.sh tester --task review-KAN-32 \
   --orchestrator <you> -- --permission-mode acceptEdits
 ```
 
-or spawn read-only agents and keep the writing in your own session. Note that a peer's
-permissions are its own: never route work a hook or a denial blocked in your session through
-a spawned agent. That is permission laundering, and the answer is to go back to the operator.
+A peer's permissions are its own: never route work a hook or a denial blocked in your session
+through a spawned agent. That is permission laundering, and the answer is to go back to the
+operator.
 
 ## Tear down
 
