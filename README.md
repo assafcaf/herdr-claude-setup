@@ -3,6 +3,9 @@
 Makes Claude Code delegate work to **Herdr panes** instead of in-process subagents, and carries
 that setup to any machine.
 
+![Left: the Agent tool runs subagents in-process, where Herdr cannot see them. Right: herdr-spawn
+puts each agent in its own pane, where it can be listed, read, prompted and interrupted.](docs/images/where-agents-live.svg)
+
 ## The problem
 
 The `Agent` tool's subagents run in-process inside the calling session — no PTY, no child
@@ -19,6 +22,9 @@ bash ~/.claude/scripts/herdr-spawn.sh reviewer --task review-42 \
   --orchestrator <caller's name from ListAgents> --prompt "..."
 ```
 
+![One spawn produces one pane addressable three ways: the herdr agent name, the Claude Code peer
+name, and the session uuid that joins them.](docs/images/three-identities.svg)
+
 Three identities that already agree:
 
 | Identity | Used for | Set by |
@@ -27,10 +33,19 @@ Three identities that already agree:
 | Claude Code peer name | `SendMessage({to: "reviewer"})` | `claude --name` |
 | session uuid | the join key — `herdr agent list` reports it as `agent_session.value` | `claude --session-id` |
 
-One tab per task, one pane per agent, laid out as a grid. A `PreToolUse(Agent)` hook enforces
-the split: subagent types that write or run long are refused and pointed here, while cheap
-read-only ones (`Explore`, `claude-code-guide`) still run in-process, because a five-second
-search is not worth a pane, a process start and a teardown.
+One tab per task, one pane per agent. Each spawn splits the *largest* pane in the tab, halved
+along its longer axis — which is what turns four agents into a grid rather than four stacked
+ribbons, and what keeps the fourth one wide enough to read.
+
+![A task tab growing: one pane, then two rows, then the lower row halved, then a two-by-two
+grid.](docs/images/pane-topology.svg)
+
+A `PreToolUse(Agent)` hook enforces the split: subagent types that write or run long are refused
+and pointed here, while cheap read-only ones (`Explore`, `claude-code-guide`) still run
+in-process, because a five-second search is not worth a pane, a process start and a teardown.
+
+![The hook: read-only subagent types exit 0 and stay in-process; everything else exits 2 and is
+handed the spawn command.](docs/images/hook-routing.svg)
 
 Outside Herdr (`HERDR_ENV != 1`) the hook stands down and the `Agent` tool behaves normally, so
 this is inert on a machine that isn't running Herdr.

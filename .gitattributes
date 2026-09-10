@@ -5,9 +5,13 @@
 *.md    text eol=lf
 *.json  text eol=lf
 *.toml  text eol=lf
+*.svg   text eol=lf
 
 # PowerShell stays CRLF; it is Windows-only anyway.
 *.ps1   text eol=crlf
 *.mjs   text eol=lf
 *.js    text eol=lf
 *.py    text eol=lf
+
+# Screenshots. Git would guess right anyway; saying so stops autocrlf ever guessing wrong.
+*.png   binary

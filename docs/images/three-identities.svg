@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 348" width="900" height="348" role="img" aria-label="One spawn produces one pane addressable three ways: the herdr agent name, the Claude Code peer name, and the session uuid that joins them.">
+  <rect x="0.5" y="0.5" width="899" height="347" rx="12" fill="#11161d" stroke="#30363d"/>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#484f58"/>
+    </marker>
+  </defs>
+  <g xml:space="preserve" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
+
+    <rect x="32.5" y="24.5" width="836" height="60" rx="6" fill="#0d1117" stroke="#30363d"/>
+    <g font-size="11.5">
+      <text x="46" y="47"><tspan fill="#8b949e">$ </tspan><tspan fill="#e6edf3">bash ~/.claude/scripts/herdr-spawn.sh </tspan><tspan fill="#bc8cff">reviewer</tspan><tspan fill="#e6edf3"> --task </tspan><tspan fill="#58a6ff">review-KAN-32</tspan><tspan fill="#e6edf3"> \</tspan></text>
+      <text x="46" y="68"><tspan fill="#e6edf3">    --orchestrator rollout-collection-8c --prompt </tspan><tspan fill="#a5d6ff">"Review the diff. Report only."</tspan></text>
+    </g>
+
+    <path d="M450 84 L450 108" stroke="#484f58" stroke-width="1.5" fill="none" marker-end="url(#a)"/>
+
+    <rect x="330.5" y="112.5" width="240" height="56" rx="8" fill="#161b22" stroke="#3fb950"/>
+    <circle cx="348" cy="134" r="4" fill="#3fb950"/>
+    <text x="360" y="138" font-size="12" fill="#e6edf3">reviewer</text>
+    <text x="348" y="156" font-size="10" fill="#8b949e">one real claude process, in pane w7:p1</text>
+
+    <g stroke="#484f58" fill="none">
+      <path d="M450 168 L450 192 L166 192 L166 216" marker-end="url(#a)"/>
+      <path d="M450 168 L450 216" marker-end="url(#a)"/>
+      <path d="M450 168 L450 192 L734 192 L734 216" marker-end="url(#a)"/>
+    </g>
+
+    <g font-size="11">
+      <rect x="32.5" y="220.5" width="267" height="94" rx="6" fill="#0d1117" stroke="#30363d"/>
+      <text x="46" y="242" font-size="11.5" fill="#58a6ff">herdr agent name</text>
+      <text x="46" y="264" fill="#e6edf3">herdr agent get reviewer</text>
+      <text x="46" y="282" fill="#e6edf3">herdr agent read reviewer</text>
+      <text x="46" y="303" font-size="10" fill="#6e7681">set by  herdr agent start</text>
+
+      <rect x="316.5" y="220.5" width="267" height="94" rx="6" fill="#0d1117" stroke="#30363d"/>
+      <text x="330" y="242" font-size="11.5" fill="#bc8cff">Claude Code peer name</text>
+      <text x="330" y="264" fill="#e6edf3">SendMessage({</text>
+      <text x="330" y="282" fill="#e6edf3">  to: "reviewer", ... })</text>
+      <text x="330" y="303" font-size="10" fill="#6e7681">set by  claude --name</text>
+
+      <rect x="600.5" y="220.5" width="267" height="94" rx="6" fill="#0d1117" stroke="#30363d"/>
+      <text x="614" y="242" font-size="11.5" fill="#d29922">session uuid</text>
+      <text x="614" y="264" fill="#e6edf3">herdr agent list reports it</text>
+      <text x="614" y="282" fill="#e6edf3">as agent_session.value</text>
+      <text x="614" y="303" font-size="10" fill="#6e7681">set by  claude --session-id</text>
+    </g>
+
+    <text x="450" y="336" font-size="11" fill="#8b949e" text-anchor="middle">three names for one pane, chosen up front instead of read back afterwards</text>
+  </g>
+</svg>
