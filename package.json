@@ -1,0 +1,36 @@
+{
+  "name": "herdr-claude-setup",
+  "version": "0.1.0",
+  "description": "Run Claude Code agents as Herdr panes instead of invisible in-process subagents",
+  "type": "module",
+  "bin": {
+    "herdr-claude-setup": "bin/cli.mjs"
+  },
+  "files": [
+    "bin/",
+    "claude/",
+    "herdr/",
+    "install.sh",
+    "settings-fragment.json",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=16"
+  },
+  "os": [
+    "win32",
+    "linux",
+    "darwin"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/assafcaf/herdr-claude-setup.git"
+  },
+  "keywords": [
+    "claude-code",
+    "herdr",
+    "agents",
+    "subagents"
+  ],
+  "private": false
+}

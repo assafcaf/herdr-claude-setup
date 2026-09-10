@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "herdr-claude-setup"
+version = "0.1.0"
+description = "Run Claude Code agents as Herdr panes instead of invisible in-process subagents"
+readme = "README.md"
+requires-python = ">=3.9"
+keywords = ["claude-code", "herdr", "agents", "subagents"]
+
+[project.urls]
+Homepage = "https://github.com/assafcaf/herdr-claude-setup"
+
+[project.scripts]
+herdr-claude-setup = "herdr_claude_setup.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["herdr_claude_setup"]
+
+# The payload lives at the repository root so the bash and npx paths can use it directly.
+# A wheel has no repository root, so it is copied under the package instead; cli.py looks
+# there first and falls back to the root when running from a clone.
+[tool.hatch.build.targets.wheel.force-include]
+"install.sh" = "herdr_claude_setup/payload/install.sh"
+"settings-fragment.json" = "herdr_claude_setup/payload/settings-fragment.json"
+"claude" = "herdr_claude_setup/payload/claude"
+"herdr" = "herdr_claude_setup/payload/herdr"

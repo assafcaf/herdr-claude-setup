@@ -29,18 +29,35 @@ a machine can be prepared before Herdr arrives.
 
 ## 2. Copy the files
 
+Two modes. `--user` installs into `~/.claude` and covers every project on the machine.
+`--project <path>` adds it to one project's `.claude/`, beside whatever skills are already there.
+
 ```bash
-bash install.sh --dry-run    # read this first
-bash install.sh
+bash install.sh --user --dry-run    # read this first
+bash install.sh --user
 ```
 
-It installs into `~/.claude`: `scripts/herdr-spawn.sh`, `hooks/route-agent-to-herdr.sh` and its
-`json-field.sh` parser, the `herdr-spawn` and `herdr` skills, `CLAUDE.md`, and — on Windows only,
-since they are PowerShell — the two status lines. It also writes Herdr's `config.toml` if that
-machine has none.
+Without a clone, `npx github:assafcaf/herdr-claude-setup` and
+`uvx --from git+https://github.com/assafcaf/herdr-claude-setup herdr-claude-setup` take the same
+flags — both are launchers around this same script.
+
+Both modes install `scripts/herdr-spawn.sh`, `hooks/route-agent-to-herdr.sh` with its
+`json-field.sh` parser, the `herdr-spawn` skill, and a `skills/herdr/SKILL.md` generated from
+`herdr --skill` so it always matches the installed binary. `--user` adds `CLAUDE.md`, this skill,
+the two PowerShell status lines (Windows only) and Herdr's `config.toml` if the machine has none
+— all user-level concerns a project install leaves alone, and a project's own `CLAUDE.md` is
+never overwritten.
+
+In `--project` mode it asks where to wire the redirect: `.claude/settings.local.json` (yours
+only, the default) or `.claude/settings.json` (committed, everyone). `--wire local|shared|none`
+answers in advance; with no TTY it takes `local` without asking. **Choose `shared` only if the
+whole team runs Herdr** — otherwise their `Agent` calls are refused with a pointer to a spawner
+they cannot use. That merge is done with a real JSON parser and drops any previous copy of the
+same hook, so re-running never stacks duplicates.
 
 Anything it would overwrite is backed up to `<file>.bak` first, once. Identical files are
-skipped, so re-running it is a no-op. It never touches `settings.json`; that is step 4.
+skipped, so re-running it is a no-op. In `--user` mode it never touches `settings.json`; that is
+step 4.
 
 ## 3. Wire Herdr's Claude integration
 

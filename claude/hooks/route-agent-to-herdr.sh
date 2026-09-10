@@ -7,7 +7,7 @@
 # one from the TUI. A team assembled that way is invisible to the operator by construction.
 #
 # So: work that writes, or that runs long enough to be worth watching, is redirected to
-# ~/.claude/scripts/herdr-spawn.sh, which puts a real `claude` session in a real pane inside
+# the herdr-spawn.sh beside this hook, which puts a real `claude` session in a real pane inside
 # the task's tab. Cheap read-only lookups stay in-process, because turning a five-second
 # file search into a pane, a process spawn and a teardown is not worth the visibility.
 #
@@ -16,7 +16,7 @@
 #   allowed   Explore              read-only tool set; the fan-out search case
 #   allowed   claude-code-guide    read-only; docs lookup
 #   allowed   statusline-setup     Read+Edit on one settings file, seconds long
-#   allowed   evidence-reviewer    this repo's auditor: Read/Grep/Glob/Bash, reports only
+#   allowed   evidence-reviewer    a read-only auditor pattern: Read/Grep/Glob, reports only
 #   blocked   general-purpose      has every tool, including Write and Edit
 #   blocked   Plan                 long-running by design; worth watching
 #   blocked   claude               catch-all with every tool
@@ -50,6 +50,16 @@ HOOK_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=./json-field.sh
 . "$HOOK_DIR/json-field.sh"
 
+# Self-locating, so the same file works installed at ~/.claude or inside a project's .claude
+# without anything rewriting these paths at install time. The message a caller reads names the
+# copy that actually blocked them — which matters when both are present.
+CLAUDE_DIR="$(cd -- "$HOOK_DIR/.." && pwd)"
+SPAWNER="$CLAUDE_DIR/scripts/herdr-spawn.sh"
+SPAWN_SKILL="$CLAUDE_DIR/skills/herdr-spawn/SKILL.md"
+case "$CLAUDE_DIR" in
+  "$HOME"/*) SPAWNER="~${SPAWNER#"$HOME"}"; SPAWN_SKILL="~${SPAWN_SKILL#"$HOME"}" ;;
+esac
+
 # No Herdr, no alternative to redirect to.
 [ "${HERDR_ENV:-}" = 1 ] || exit 0
 [ "${CC_ALLOW_INPROCESS_AGENTS:-}" = 1 ] && exit 0
@@ -69,7 +79,7 @@ $ALLOWED_TYPES
 EOF
 
 cat >&2 <<EOF
-Blocked by ~/.claude/hooks/route-agent-to-herdr.sh: subagent_type '$subagent_type' runs
+Blocked by $HOOK_DIR/route-agent-to-herdr.sh: subagent_type '$subagent_type' runs
 in-process, where Herdr cannot see it.${description:+ (task: $description)}
 
 In-process subagents have no pane, no name and no session id, so they never appear in
@@ -77,7 +87,7 @@ In-process subagents have no pane, no name and no session id, so they never appe
 
 Spawn it into a pane instead — one tab per task, one pane per agent:
 
-    bash ~/.claude/scripts/herdr-spawn.sh <agent-name> \\
+    bash $SPAWNER <agent-name> \\
       --task <task-slug> \\
       --orchestrator <your own name from ListAgents> \\
       --prompt "<the same instructions you were about to pass>"
@@ -88,7 +98,7 @@ Then drive it with the name you chose:
     herdr agent read <agent-name> --source recent-unwrapped --lines 120
     SendMessage({to: "<agent-name>", message: "..."})
 
-See ~/.claude/skills/herdr-spawn/SKILL.md for the full loop, including teardown.
+See $SPAWN_SKILL for the full loop, including teardown.
 
 If this really is a cheap read-only lookup, use subagent_type 'Explore' instead.
 EOF
