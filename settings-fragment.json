@@ -1,0 +1,30 @@
+{
+  "_comment": "Merge these keys into ~/.claude/settings.json. This is a fragment, not a whole settings file — never copy it over an existing settings.json, which would discard that machine's own keys. `herdr integration install claude` adds the SessionStart hook itself; it is shown here only so a reviewer can tell the two apart.",
+
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"<HOME>/.claude/hooks/route-agent-to-herdr.sh\"",
+            "timeout": 15,
+            "statusMessage": "Routing delegated work to Herdr"
+          }
+        ]
+      }
+    ]
+  },
+
+  "statusLine": {
+    "type": "command",
+    "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"<HOME>\\.claude\\statusline.ps1\"",
+    "padding": 0
+  },
+
+  "subagentStatusLine": {
+    "type": "command",
+    "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"<HOME>\\.claude\\subagent-statusline.ps1\""
+  }
+}
