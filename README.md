@@ -147,3 +147,10 @@ never by text munging. With neither available the installer prints the entry for
 guessing.
 
 The PowerShell status lines are Windows-only and skipped elsewhere. Everything else is portable.
+
+## Licence
+
+MIT — see [LICENSE](LICENSE).
+
+The generated `skills/herdr/SKILL.md` is Herdr's own documentation, produced on your machine by
+`herdr --skill`. It is not covered by this licence and is not distributed here.

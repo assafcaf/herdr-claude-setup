@@ -2,6 +2,7 @@
   "name": "herdr-claude-setup",
   "version": "0.1.0",
   "description": "Run Claude Code agents as Herdr panes instead of invisible in-process subagents",
+  "license": "MIT",
   "type": "module",
   "bin": {
     "herdr-claude-setup": "bin/cli.mjs"
@@ -12,6 +13,7 @@
     "herdr/",
     "install.sh",
     "settings-fragment.json",
+    "LICENSE",
     "README.md"
   ],
   "engines": {
