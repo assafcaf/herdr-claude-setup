@@ -60,33 +60,36 @@ this is inert on a machine that isn't running Herdr.
 
 ## What it looks like
 
-![One pane of a four-agent demo tab: the agent scout mid-turn, with Herdr's tab bar above it and
-the repo's own status line below.](docs/images/demo-pane-scout.png)
+![Four agents in one Herdr tab, mid-relay: otto, charlie, dana and mira, each in its own pane,
+passing a question between them by name.](docs/images/demo-relay.png)
 
-One pane of a four-agent `demo` tab, mid-turn. The second status-line row —
-`herdr w8/t4/p4 │ claude:462141f2 │ scout` — is `statusline.ps1` from this repo, reporting the pane
-this session occupies and the session id that `herdr agent list` reports back as
-`agent_session.value`.
+Four agents in one tab, each in its own pane, passing a question along by name. `otto` opens it:
 
-And the mesh, exercised. `scout` was asked to question a sibling it had not created, and to report
-back to the orchestrator over the other channel:
-
-```console
-# scout — a spawned agent, not the orchestrator — addressing a sibling by name:
-$ herdr agent prompt hookline "Reply with the exact line number in
-    claude/hooks/route-agent-to-herdr.sh where a missing subagent_type is
-    normalised to general-purpose, and quote that line."
-{"type":"agent_prompted"}
-
-$ herdr agent read hookline --source recent-unwrapped --lines 40
-  Line 72:
-  [ -n "$subagent_type" ] || subagent_type="general-purpose"
-
-# then back up to the orchestrator, same name, the other channel:
-SendMessage({to: "evidence-kan-32-8b", message: "hookline answered: line 72 ..."})
+```bash
+herdr agent prompt charlie "Charlie - I need the exact line in
+  claude/hooks/route-agent-to-herdr.sh where a missing subagent_type is normalised to
+  general-purpose. Send your answer straight to dana, not back to me, and ask her to
+  check whether install.sh copies that hook in --user mode and to pass her finding to mira."
 ```
 
-Neither leg was routed through the orchestrator, and `hookline` was not told who was asking.
+`charlie` answers and hands off. `dana` reports `Baton passed to mira (pane w8:pD)`. `mira` closes
+the loop back round — *"Passed to charlie (pane w8:pB), including the manual-merge caveat"* — and
+the orchestrator relayed not one hop of it; it sat in the top-left pane saying *"Standing by for
+mira's report"*. `dana` then messaged `charlie` again unprompted, which nothing in the brief asked
+for and nobody had to authorise.
+
+The other channel reaches the same agents by the same names. Asked to question a sibling and report
+back, an agent used one for each leg:
+
+```js
+herdr agent prompt hookline "…where is a missing subagent_type normalised…"   // sideways
+SendMessage({to: "evidence-kan-32-8b", message: "hookline answered: line 72 …"})  // upwards
+```
+
+Up close, the second row of every status line is `statusline.ps1` from this repo, naming the pane
+the session occupies and the id that `herdr agent list` reports back as `agent_session.value`:
+
+![One pane up close: the agent scout mid-turn, its status line legible.](docs/images/demo-pane-scout.png)
 
 ## Install
 
