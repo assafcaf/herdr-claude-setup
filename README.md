@@ -3,6 +3,9 @@
 Makes Claude Code delegate work to **Herdr panes** instead of in-process subagents, and carries
 that setup to any machine.
 
+![Left: the Agent tool runs subagents in-process, where Herdr cannot see them. Right: herdr-spawn
+puts each agent in its own pane, where it can be listed, read, prompted and interrupted.](docs/images/where-agents-live.svg)
+
 ## The problem
 
 The `Agent` tool's subagents run in-process inside the calling session — no PTY, no child
@@ -19,6 +22,9 @@ bash ~/.claude/scripts/herdr-spawn.sh reviewer --task review-42 \
   --orchestrator <caller's name from ListAgents> --prompt "..."
 ```
 
+![One spawn produces one pane addressable three ways: the herdr agent name, the Claude Code peer
+name, and the session uuid that joins them.](docs/images/three-identities.svg)
+
 Three identities that already agree:
 
 | Identity | Used for | Set by |
@@ -27,13 +33,63 @@ Three identities that already agree:
 | Claude Code peer name | `SendMessage({to: "reviewer"})` | `claude --name` |
 | session uuid | the join key — `herdr agent list` reports it as `agent_session.value` | `claude --session-id` |
 
-One tab per task, one pane per agent, laid out as a grid. A `PreToolUse(Agent)` hook enforces
-the split: subagent types that write or run long are refused and pointed here, while cheap
-read-only ones (`Explore`, `claude-code-guide`) still run in-process, because a five-second
-search is not worth a pane, a process start and a teardown.
+Because those are one string rather than three, addressing an agent takes no lookup — and nothing
+about it is hierarchical. The `herdr` CLI is on `PATH` in every pane, so **any agent can prompt,
+read or wait on any other**, not only the one that spawned it, and not only downwards. A team
+assembled this way is a mesh, not a tree.
+
+![Four panes, every pair joined by a two-way arrow: any agent can address any other over the herdr
+CLI or over Claude Code peer messaging, by the same name.](docs/images/every-agent-addressable.svg)
+
+One tab per task, one pane per agent. Each spawn splits the *largest* pane in the tab, halved
+along its longer axis — which is what turns four agents into a grid rather than four stacked
+ribbons, and what keeps the fourth one wide enough to read.
+
+![A task tab growing: one pane, then two rows, then the lower row halved, then a two-by-two
+grid.](docs/images/pane-topology.svg)
+
+A `PreToolUse(Agent)` hook enforces the split: subagent types that write or run long are refused
+and pointed here, while cheap read-only ones (`Explore`, `claude-code-guide`) still run
+in-process, because a five-second search is not worth a pane, a process start and a teardown.
+
+![The hook: read-only subagent types exit 0 and stay in-process; everything else exits 2 and is
+handed the spawn command.](docs/images/hook-routing.svg)
 
 Outside Herdr (`HERDR_ENV != 1`) the hook stands down and the `Agent` tool behaves normally, so
 this is inert on a machine that isn't running Herdr.
+
+## What it looks like
+
+![Four agents in one Herdr tab, mid-relay: otto, charlie, dana and mira, each in its own pane,
+passing a question between them by name.](docs/images/demo-relay.png)
+
+Four agents in one tab, each in its own pane, passing a question along by name. `otto` opens it:
+
+```bash
+herdr agent prompt charlie "Charlie - I need the exact line in
+  claude/hooks/route-agent-to-herdr.sh where a missing subagent_type is normalised to
+  general-purpose. Send your answer straight to dana, not back to me, and ask her to
+  check whether install.sh copies that hook in --user mode and to pass her finding to mira."
+```
+
+`charlie` answers and hands off. `dana` reports `Baton passed to mira (pane w8:pD)`. `mira` closes
+the loop back round — *"Passed to charlie (pane w8:pB), including the manual-merge caveat"* — and
+the orchestrator relayed not one hop of it; it sat in the top-left pane saying *"Standing by for
+mira's report"*. `dana` then messaged `charlie` again unprompted, which nothing in the brief asked
+for and nobody had to authorise.
+
+The other channel reaches the same agents by the same names. Asked to question a sibling and report
+back, an agent used one for each leg:
+
+```js
+herdr agent prompt hookline "…where is a missing subagent_type normalised…"   // sideways
+SendMessage({to: "evidence-kan-32-8b", message: "hookline answered: line 72 …"})  // upwards
+```
+
+Up close, the second row of every status line is `statusline.ps1` from this repo, naming the pane
+the session occupies and the id that `herdr agent list` reports back as `agent_session.value`:
+
+![One pane up close: the agent scout mid-turn, its status line legible.](docs/images/demo-pane-scout.png)
 
 ## Install
 

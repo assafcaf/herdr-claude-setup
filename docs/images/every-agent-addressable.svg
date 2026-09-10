@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 438" width="900" height="438" role="img" aria-label="Every agent can address every other agent by name, in both directions, over two channels: the herdr CLI and Claude Code peer messaging.">
+  <rect x="0.5" y="0.5" width="899" height="437" rx="12" fill="#11161d" stroke="#30363d"/>
+  <defs>
+    <marker id="m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6e7681"/>
+    </marker>
+  </defs>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
+    <text x="32" y="34" font-size="13" fill="#e6edf3" font-weight="600">Any agent can drive any other</text>
+    <text x="266" y="34" font-size="12" fill="#8b949e">not only the one that spawned it, and not only downwards</text>
+
+    <g stroke="#6e7681" fill="none" marker-start="url(#m)" marker-end="url(#m)">
+      <path d="M348 152 L552 152"/>
+      <path d="M348 302 L552 302"/>
+      <path d="M270 182 L270 272"/>
+      <path d="M630 182 L630 272"/>
+      <path d="M338 180 L562 274"/>
+      <path d="M562 180 L338 274"/>
+    </g>
+
+    <g font-size="12">
+      <rect x="195.5" y="125.5" width="149" height="54" rx="8" fill="#161b22" stroke="#58a6ff"/>
+      <circle cx="212" cy="146" r="4" fill="#58a6ff"/>
+      <text x="224" y="150" fill="#e6edf3">orchestrator</text>
+      <text x="212" y="168" font-size="10" fill="#6e7681">w8:p1</text>
+
+      <rect x="555.5" y="125.5" width="149" height="54" rx="8" fill="#161b22" stroke="#3fb950"/>
+      <circle cx="572" cy="146" r="4" fill="#3fb950"/>
+      <text x="584" y="150" fill="#e6edf3">reviewer</text>
+      <text x="572" y="168" font-size="10" fill="#6e7681">w8:p4</text>
+
+      <rect x="195.5" y="275.5" width="149" height="54" rx="8" fill="#161b22" stroke="#3fb950"/>
+      <circle cx="212" cy="296" r="4" fill="#3fb950"/>
+      <text x="224" y="300" fill="#e6edf3">tester</text>
+      <text x="212" y="318" font-size="10" fill="#6e7681">w8:p5</text>
+
+      <rect x="555.5" y="275.5" width="149" height="54" rx="8" fill="#161b22" stroke="#3fb950"/>
+      <circle cx="572" cy="296" r="4" fill="#3fb950"/>
+      <text x="584" y="300" fill="#e6edf3">docs</text>
+      <text x="572" y="318" font-size="10" fill="#6e7681">w8:p6</text>
+    </g>
+
+    <rect x="368" y="215" width="164" height="19" rx="4" fill="#11161d"/>
+    <text x="450" y="228" font-size="11" fill="#8b949e" text-anchor="middle">every edge is two-way</text>
+
+    <text x="32" y="76" font-size="11" fill="#8b949e">Two channels, both addressing an agent by the same name:</text>
+    <g font-size="11">
+      <rect x="32.5" y="86.5" width="836" height="26" rx="5" fill="#0d1117" stroke="#30363d"/>
+      <text x="46" y="104"><tspan fill="#8b949e">$ </tspan><tspan fill="#e6edf3">herdr agent prompt docs "..."</tspan><tspan fill="#6e7681">      the CLI is on PATH in every pane, so any pane can drive any agent</tspan></text>
+    </g>
+
+    <rect x="32.5" y="352.5" width="836" height="66" rx="6" fill="#0d1117" stroke="#30363d"/>
+    <g font-size="11">
+      <text x="46" y="374"><tspan fill="#e6edf3">SendMessage({to: "docs", message: "..."})</tspan><tspan fill="#6e7681">   Claude Code peer messaging, the same name again</tspan></text>
+      <text x="46" y="398" fill="#8b949e">herdr-spawn.sh sets the herdr agent name and the Claude Code peer name to one string, so a name</text>
+      <text x="46" y="411" fill="#8b949e">learned from `herdr agent list` can be used with either channel, by anyone, without a lookup.</text>
+    </g>
+  </g>
+</svg>
