@@ -33,6 +33,14 @@ Three identities that already agree:
 | Claude Code peer name | `SendMessage({to: "reviewer"})` | `claude --name` |
 | session uuid | the join key — `herdr agent list` reports it as `agent_session.value` | `claude --session-id` |
 
+Because those are one string rather than three, addressing an agent takes no lookup — and nothing
+about it is hierarchical. The `herdr` CLI is on `PATH` in every pane, so **any agent can prompt,
+read or wait on any other**, not only the one that spawned it, and not only downwards. A team
+assembled this way is a mesh, not a tree.
+
+![Four panes, every pair joined by a two-way arrow: any agent can address any other over the herdr
+CLI or over Claude Code peer messaging, by the same name.](docs/images/every-agent-addressable.svg)
+
 One tab per task, one pane per agent. Each spawn splits the *largest* pane in the tab, halved
 along its longer axis — which is what turns four agents into a grid rather than four stacked
 ribbons, and what keeps the fourth one wide enough to read.
@@ -49,6 +57,36 @@ handed the spawn command.](docs/images/hook-routing.svg)
 
 Outside Herdr (`HERDR_ENV != 1`) the hook stands down and the `Agent` tool behaves normally, so
 this is inert on a machine that isn't running Herdr.
+
+## What it looks like
+
+![One pane of a four-agent demo tab: the agent scout mid-turn, with Herdr's tab bar above it and
+the repo's own status line below.](docs/images/demo-pane-scout.png)
+
+One pane of a four-agent `demo` tab, mid-turn. The second status-line row —
+`herdr w8/t4/p4 │ claude:462141f2 │ scout` — is `statusline.ps1` from this repo, reporting the pane
+this session occupies and the session id that `herdr agent list` reports back as
+`agent_session.value`.
+
+And the mesh, exercised. `scout` was asked to question a sibling it had not created, and to report
+back to the orchestrator over the other channel:
+
+```console
+# scout — a spawned agent, not the orchestrator — addressing a sibling by name:
+$ herdr agent prompt hookline "Reply with the exact line number in
+    claude/hooks/route-agent-to-herdr.sh where a missing subagent_type is
+    normalised to general-purpose, and quote that line."
+{"type":"agent_prompted"}
+
+$ herdr agent read hookline --source recent-unwrapped --lines 40
+  Line 72:
+  [ -n "$subagent_type" ] || subagent_type="general-purpose"
+
+# then back up to the orchestrator, same name, the other channel:
+SendMessage({to: "evidence-kan-32-8b", message: "hookline answered: line 72 ..."})
+```
+
+Neither leg was routed through the orchestrator, and `hookline` was not told who was asking.
 
 ## Install
 
